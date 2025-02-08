@@ -1,6 +1,6 @@
 # Linux Kernel Development Setup for Docker
 
-This repository documents my setup for Linux kernel development, including tools, configurations, and workflows to streamline the process.
+This repository documents my setup for Linux kernel development, including tools, configurations, and workflows to streamline the process on MacOS.
 
 ## Table of Contents
 
@@ -12,14 +12,14 @@ This repository documents my setup for Linux kernel development, including tools
   - [Cloning the Kernel Source](#cloning-the-kernel-source)
   - [Building the Kernel](#building-the-kernel)
   - [Building File System Image](#building-file-system-image)
+  - [QEMU virtualization](#qemu-virtualization)
 
 ## Introduction
 
 This repository serves as a guide to set up a development environment in MacOS for working on the Linux kernel.
-It includes essential tools, configurations, and best practices to make the workflow efficient.
-My primary working machine is a M2 MacBook Air.
+It includes essential tools, configurations, and best practices to make the workflow efficient. Please note that my primary working machine is an M2 MacBook Air.
 
-My username inside the Linux system is `maoth`. You can change this inside the Dockerfile provided above by replacing all instances of `maoth` word with the username you want to use.
+My username inside the Linux system is `maoth`. You can change this inside the Dockerfile provided above by replacing all instances of `maoth` with the username you want to use.
 
 ## Installation
 
@@ -32,7 +32,7 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 2. It is not possible to build the kernel in the case-insensitive file system of MacOS. So, you need to create a new partition using Disk Utility.
    - Create a new partition of atleast 30GB.
    - Set the formatting option of this partition to **Mac OS Extended (Case-sensitive, Journaled)**.
-   - *I gave the partition name as **Linux***. Make sure to change the symlink provided above according to the partition name.
+   - I gave the partition name as *Linux*. Make sure to change the symlink provided in the repo according to the partition name.
 
 ### Building the Docker Image
 
@@ -57,7 +57,7 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 
    **Note:** We are using `kernel` as the new-name.
 
-4. Exec.
+4. Exec:
    ```sh
    docker start kernel
    docker exec -it kernel /bin/bash
@@ -130,7 +130,9 @@ make ARCH=x86_64 -j8
 
 **Note:** Go take a nap during the build process for above.
 
-Now navigate to Linux repo and provide the filesystem path when launching qemu:
+### QEMU Virtualization
+
+Now navigate to the Linux repo and provide the filesystem path when launching qemu:
 ```sh
 sudo qemu-system-x86_64 -s -kernel arch/x86/boot/bzImage -boot c -m 2049M -hda ~/buildroot/output/images/rootfs.ext4 -append "root=/dev/sda rw console=ttyS0,115200 acpi=off nokaslr" -serial stdio -display none
 ```
