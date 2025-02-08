@@ -57,13 +57,8 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 
    **Note:** We are using `kernel` as the new-name.
 
-4. Exec:
-   ```sh
-   docker start kernel
-   docker exec -it kernel /bin/bash
-   ```
 
-5. Set sudo password for the user:
+4. Set sudo password for the user using root:
    ```sh
    docker exec -u root -ti kernel /bin/bash
    ```
@@ -71,6 +66,12 @@ My username inside the Linux system is `maoth`. You can change this inside the D
    Inside linux shell, use command given below to change password:
    ```sh
    passwd maoth
+   ```
+
+5. We can exec normally now.
+   ```sh
+   docker start kernel
+   docker exec -it kernel /bin/bash
    ```
 
 ## Workflow
