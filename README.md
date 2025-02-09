@@ -104,6 +104,12 @@ Build the kernel:
 make ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu- -j8
 ```
 
+If you get the certificate error, execute the following and run `make` again.
+```sh
+scripts/config --disable SYSTEM_TRUSTED_KEYS
+scripts/config --disable SYSTEM_REVOCATION_KEYS
+```
+
 For testing changes, use QEMU for virtualization:
 ```sh
 qemu-system-x86_64 -kernel arch/x86/boot/bzImage -hda /dev/zero -append "root=/dev/zero console=ttyS0" -serial stdio -display none
