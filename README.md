@@ -17,7 +17,8 @@ This repository documents my setup for Linux kernel development, including tools
 ## Introduction
 
 This repository serves as a guide to set up a development environment in MacOS for working on the Linux kernel.
-It includes essential tools, configurations, and best practices to make the workflow efficient. Please note that my primary working machine is an M2 MacBook Air.
+It includes essential tools, configurations, and best practices to make the workflow efficient.
+Please note that my primary working machine is an M2 MacBook Air and we building for `x86-64` target.
 
 My username inside the Linux system is `maoth`. You can change this inside the Dockerfile provided above by replacing all instances of `maoth` with the username you want to use.
 
@@ -26,7 +27,7 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 ### Prerequisites
 
 1. Install [Docker](https://www.docker.com/).
-    - There is a regression in some Docker versions (*I am using 27.5.1, build 9f9e405*). So, Ubuntu crashes during the build process.
+    - There is a regression in some versions of Docker (*I am using 27.5.1, build 9f9e405*). So, Ubuntu crashes during the build process.
     - To deal with the above, goto `Docker Settings > General > Virtual Machine Options` and set the following two:
     - `Choose Virtual Machine Manager (VMM) > Apple Virtualization Framework` and `Choose file sharing implementation for your containers > osxfs (Legacy)`.
 
@@ -118,6 +119,10 @@ wget https://buildroot.org/downloads/buildroot-2024.02.10.tar.gz
 tar xvf buildroot-2024.02.10.tar.gz
 mv buildroot-2024.02.10 buildroot
 cd buildroot
+```
+
+Generate the config file:
+```sh
 sudo make menuconfig
 ```
 
