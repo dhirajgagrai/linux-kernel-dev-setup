@@ -133,10 +133,12 @@ make ARCH=x86_64 -j8
 
 ### QEMU Virtualization
 
-Now navigate to the Linux repo and provide the filesystem path when launching qemu:
+Now navigate to the Linux repo and provide the filesystem image path when launching qemu:
 ```sh
 sudo qemu-system-x86_64 -s -kernel arch/x86/boot/bzImage -boot c -m 2049M -hda ~/buildroot/output/images/rootfs.ext4 -append "root=/dev/sda rw console=ttyS0,115200 acpi=off nokaslr" -serial stdio -display none
 ```
+
+**Note:** buildroot login username is `root` and password is empty.
 
 ---
 
