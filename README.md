@@ -95,7 +95,7 @@ My username inside the Linux system is `maoth`. You can change this inside the D
    make ARCH=x86_64 menuconfig
    ```
 
-   - Enable required options (**I use defaults*) and `Save`.
+   - Enable required options (*I am using defaults*) and `Save`.
 
 ### Building the Kernel
 
@@ -115,7 +115,7 @@ For testing changes, use QEMU for virtualization:
 qemu-system-x86_64 -kernel arch/x86/boot/bzImage -hda /dev/zero -append "root=/dev/zero console=ttyS0" -serial stdio -display none
 ```
 
-There will be an kernel panic - unable to mount root file system.
+Kernel will panic - unable to mount root file system.
 
 ### Building File System Image
 
