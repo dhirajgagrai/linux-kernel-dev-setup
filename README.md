@@ -27,7 +27,8 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 
 1. Install [Docker](https://www.docker.com/).
     - There is a regression in some Docker versions (*I am using 27.5.1, build 9f9e405*). So, Ubuntu crashes during the build process.
-    - To deal with the above, goto `Docker Settings > General > Virtual Machine Options > Choose file sharing implementation for your containers` and set to `osxfs (Legacy)`.
+    - To deal with the above, goto `Docker Settings > General > Virtual Machine Options` and set the following two:
+    - `Choose Virtual Machine Manager (VMM) > Apple Virtualization Framework` and `Choose file sharing implementation for your containers > osxfs (Legacy)`.
 
 2. It is not possible to build the kernel in the case-insensitive file system of MacOS. So, you need to create a new partition using Disk Utility.
    - Create a new partition of atleast 30GB.
