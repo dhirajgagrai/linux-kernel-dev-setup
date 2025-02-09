@@ -13,6 +13,7 @@ This repository documents my setup for Linux kernel development, including tools
   - [Building the Kernel](#building-the-kernel)
   - [Building File System Image](#building-file-system-image)
   - [QEMU virtualization](#qemu-virtualization)
+- [Additional](#additional)
 
 ## Introduction
 
@@ -104,7 +105,7 @@ Build the kernel:
 make ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu- -j8
 ```
 
-If you get the certificate error, execute the following and run `make` again.
+If you errors regarding certificates, execute the following and run `make` again.
 ```sh
 scripts/config --disable SYSTEM_TRUSTED_KEYS
 scripts/config --disable SYSTEM_REVOCATION_KEYS
@@ -151,6 +152,16 @@ sudo qemu-system-x86_64 -s -kernel arch/x86/boot/bzImage -boot c -m 2049M -hda ~
 ```
 
 **Note:** buildroot login username is `root` and password is empty.
+
+## Additional
+
+- [Linux Foundation - Beginner's Guide](https://trainingportal.linuxfoundation.org/courses/a-beginners-guide-to-linux-kernel-development-lfd103)
+- [Kernel Newbies](https://kernelnewbies.org/FirstKernelPatch)
+- [kernel.org](https://www.kernel.org/doc/html/latest/process/howto.html)
+- [VMWare Fusion](https://blogs.vmware.com/teamfusion/2024/05/fusion-pro-now-available-free-for-personal-use.html) - for kernel testing.
+
+This will come as a surprise but I use VMWare Fusion heavily for testing purposes. I am still getting familiar with QEMU and hope to replace VMWare with it. My workflow with VMWare Fusion can probably be its own guide, so I am not including it here.
+Following the Linux Foundation guide with VMWare can probably be sufficient for MacOS development setup. However, it does not provide the flexibility of having my own developer UX and environment.
 
 ---
 
