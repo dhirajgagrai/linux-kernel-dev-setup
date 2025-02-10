@@ -37,6 +37,11 @@ My username inside the Linux system is `maoth`. You can change this inside the D
    - Set the formatting option of this partition to **Mac OS Extended (Case-sensitive, Journaled)**.
    - I gave the partition name as *Linux*. Make sure to change the symlink provided in the repo according to the partition name.
 
+3. Install QEMU:
+   ```sh
+   brew install qemu
+   ```
+
 ### Building the Docker Image
 
 1. Build the image using dockerfile.
@@ -79,6 +84,8 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 
 ## Workflow
 
+Following steps are performed inside Linux shell.
+
 ### Cloning the Kernel Source
 
 1. Clone the Linux kernel source:
@@ -111,7 +118,7 @@ scripts/config --disable SYSTEM_TRUSTED_KEYS
 scripts/config --disable SYSTEM_REVOCATION_KEYS
 ```
 
-For testing changes, use QEMU for virtualization:
+For testing changes, use QEMU for virtualization (this can be done from MacOS system / shell):
 ```sh
 qemu-system-x86_64 -kernel arch/x86/boot/bzImage -hda /dev/zero -append "root=/dev/zero console=ttyS0" -serial stdio -display none
 ```
@@ -146,9 +153,9 @@ make ARCH=x86_64 -j8
 
 ### QEMU Virtualization
 
-Now navigate to the Linux repo and provide the filesystem image path when launching qemu:
+Now navigate to the Linux repo and provide the filesystem image path when launching qemu (this can be done from MacOS system / shell):
 ```sh
-sudo qemu-system-x86_64 -s -kernel arch/x86/boot/bzImage -boot c -m 2049M -hda ~/buildroot/output/images/rootfs.ext4 -append "root=/dev/sda rw console=ttyS0,115200 acpi=off nokaslr" -serial stdio -display none
+qemu-system-x86_64 -s -kernel arch/x86/boot/bzImage -boot c -m 2049M -hda ~/buildroot/output/images/rootfs.ext4 -append "root=/dev/sda rw console=ttyS0,115200 acpi=off nokaslr" -serial stdio -display none
 ```
 
 **Note:** buildroot login username is `root` and password is empty.
