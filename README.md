@@ -37,7 +37,12 @@ My username inside the Linux system is `maoth`. You can change this inside the D
    - Set the formatting option of this partition to **Mac OS Extended (Case-sensitive, Journaled)**.
    - I gave the partition name as *Linux*. Make sure to change the symlink provided in the repo according to the partition name.
 
-3. Install QEMU:
+3. Clone the Linux kernel source inside the parition created above:
+   ```sh
+   git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+   ```
+
+4. Install QEMU:
    ```sh
    brew install qemu
    ```
@@ -86,24 +91,19 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 
 Following steps are performed inside Linux shell.
 
-### Cloning the Kernel Source
+### Configuring the Kernel
 
-1. Clone the Linux kernel source:
-   ```sh
-   git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-   ```
+ Navigate into the kernel source directory:
+```sh
+cd linux
+```
 
-2. Navigate into the kernel source directory:
-   ```sh
-   cd linux
-   ```
+Configure the kernel:
+```sh
+make ARCH=x86_64 menuconfig
+```
 
-3. Configure the kernel:
-   ```sh
-   make ARCH=x86_64 menuconfig
-   ```
-
-   - Enable required options (*I am using defaults*) and `Save`.
+Enable required options (*I am using defaults*) and `Save`.
 
 ### Building the Kernel
 
