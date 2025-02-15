@@ -1,4 +1,4 @@
-# Linux Kernel Development Setup for Docker
+# Linux Kernel Development Setup for MacOS
 
 This repository documents my setup for Linux kernel development, including tools, configurations, and workflows to streamline the process on MacOS.
 
@@ -7,49 +7,47 @@ This repository documents my setup for Linux kernel development, including tools
 - [Introduction](#introduction)
 - [Installation](#installation)
   - [Prerequisites](#prerequisites)
-  - [Building the Docker Image](#building-the-docker-image)
+  - [Setup Docker](#setup-docker)
 - [Workflow](#workflow)
-  - [Cloning the Kernel Source](#cloning-the-kernel-source)
-  - [Building the Kernel](#building-the-kernel)
-  - [Building File System Image](#building-file-system-image)
-  - [QEMU virtualization](#qemu-virtualization)
+  - [Setup QEMU](#setup-qemu)
+  - [Generate config and initrd](#generate-config-and-initrd)
+  - [Build Kernel](#build-kernel)
+  - [Test Build](#test-build)
 - [Additional](#additional)
 
 ## Introduction
 
 This repository serves as a guide to set up a development environment in MacOS for working on the Linux kernel.
-It includes essential tools, configurations, and best practices to make the workflow efficient.
-Please note that my primary working machine is an M2 MacBook Air and we building for `x86-64` target.
+It includes essential tools, configurations, and practices to make my workflow efficient.
+My primary working machine is an M2 MacBook Air.
 
-My username inside the Linux system is `maoth`. You can change this inside the Dockerfile provided above by replacing all instances of `maoth` with the username you want to use.
+My username inside the Linux system is `maoth`.
+You can change this inside the Dockerfile provided above by replacing all instances of `maoth` with the username you want to use.
+
+This is the second iteration of my setup. The previous iteration had issues with tracking git files.
+You can check the previous iteration on GitHub history.
 
 ## Installation
 
 ### Prerequisites
 
 1. Install [Docker](https://www.docker.com/).
-    - There is a regression in some versions of Docker (*I am using 27.5.1, build 9f9e405*). So, Ubuntu crashes during the build process.
-    - To deal with the above, goto `Docker Settings > General > Virtual Machine Options` and set the following two:
-    - `Choose Virtual Machine Manager (VMM) > Apple Virtualization Framework` and `Choose file sharing implementation for your containers > osxfs (Legacy)`.
 
-2. It is not possible to build the kernel in the case-insensitive file system of MacOS. So, you need to create a new partition using Disk Utility.
+2. This step is done because I want to use a shared volume between Docker and host system. This helps me in taking backups easily.
+   It is not possible to build the kernel in the case-insensitive file system of MacOS.
+   So, we need to create a new partition using Disk Utility if we wish to have a shared volume.
    - Create a new partition of atleast 30GB.
    - Set the formatting option of this partition to **Mac OS Extended (Case-sensitive, Journaled)**.
    - I gave the partition name as *Linux*. Make sure to change the symlink provided in the repo according to the partition name.
 
-3. Clone the Linux kernel source inside the parition created above:
-   ```sh
-   git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-   ```
-
-4. Install QEMU:
+3. Install QEMU:
    ```sh
    brew install qemu
    ```
 
-### Building the Docker Image
+### Setup Docker
 
-1. Build the image using dockerfile.
+1. Build the docker image using dockerfile.
    ```sh
    docker build -t ubuntu-dev .
    ```
@@ -58,22 +56,19 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 
 2. Create container and mount home directory of username to the partition created above.
    ```sh
-   docker run -it -v /Volumes/Linux:/home/maoth ubuntu-dev /bin/bash
+   docker run --name kernel-dev -it -v /Volumes/Linux:/home/maoth ubuntu-dev /bin/bash
    ```
 
-   **Note:** I have `maoth` as the username. Make changes as required.
+   **Note:** I have `maoth` as the username. Make changes as required. We are using `kernel-dev` as the name for container.
 
-3. Rename the container to something memorable.
+3. After exiting from above, we may have to start the container:
    ```sh
-   docker rename old-name new-name
+   docker start kernel-dev
    ```
-
-   **Note:** We are using `kernel` as the new-name.
-
 
 4. Set sudo password for the user using root:
    ```sh
-   docker exec -u root -ti kernel /bin/bash
+   docker exec -u root -ti kernel-dev /bin/bash
    ```
 
    Inside linux shell, use command given below to change password:
@@ -83,82 +78,157 @@ My username inside the Linux system is `maoth`. You can change this inside the D
 
 5. We can exec normally now.
    ```sh
-   docker start kernel
-   docker exec -it kernel /bin/bash
+   docker exec -it kernel-dev /bin/bash
+   ```
+
+6. Clone the Linux kernel source:
+   ```sh
+   git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
    ```
 
 ## Workflow
 
-Following steps are performed inside Linux shell.
+### Setup QEMU
 
-### Configuring the Kernel
+For testing changes, we use QEMU for virtualization. First download a Linux image (I use Ubuntu Server 24.04.1 arm64).
 
- Navigate into the kernel source directory:
+1. We need an UEFI firmware for booting QEMU, we can use the one provided with QEMU itself: `/opt/homebrew/Cellar/qemu/9.2.0/share/qemu/edk2-aarch64-code.fd`
+
+2. Create a disk somewhere:
+   ```sh
+   qemu-img create -f qcow2 ubuntu.img 30G
+   ```
+
+3. Launch the image and install it from the QEMU graphical window:
+   ```sh
+   qemu-system-aarch64 \
+      -monitor stdio \
+      -display default,show-cursor=on \
+      -M virt,highmem=off \
+      -accel hvf \
+      -cpu host \
+      -smp 4 \
+      -m 3000 \
+      -bios edk2-aarch64-code.fd \
+      -device virtio-gpu-pci \
+      -device qemu-xhci \
+      -device usb-kbd \
+      -device usb-tablet \
+      -device intel-hda \
+      -device hda-duplex \
+      -device virtio-net-pci,netdev=net0 \
+      -netdev user,id=net0,hostfwd=tcp::8022-:22 \
+      -drive if=virtio,file=ubuntu.img,format=qcow2 \
+      -cdrom /Volumes/Expansion/BACKUPS_Images/ubuntu-24.04.1-live-server-arm64.iso
+   ```
+
+   **Note:** Provide the correct path to images above in `file` and `-cdrom` option.
+
+### Generate config and initrd
+
+1. After installing the image, launch the raw disk image:
+   ```sh
+   qemu-system-aarch64 \
+      -nographic \
+      -M virt,highmem=off \
+      -accel hvf \
+      -cpu host \
+      -smp 4 \
+      -m 3000 \
+      -bios edk2-aarch64-code.fd \
+      -device virtio-gpu-pci \
+      -device qemu-xhci \
+      -device usb-kbd \
+      -device usb-tablet \
+      -device intel-hda \
+      -device hda-duplex \
+      -device virtio-net-pci,netdev=net0 \
+      -netdev user,id=net0,hostfwd=tcp::8022-:22 \
+      -drive if=virtio,file=ubuntu.img,format=qcow2
+   ```
+
+2. Run update:
+   ```sh
+   sudo apt update && sudo apt upgrade
+   ```
+
+3. Copy the config file from `/boot`:
+   ```sh
+   cp /boot/config* ~/.config
+   ```
+
+4. Generate the initrd file:
+   ```sh
+   sudo mkinitramfs -o ~/initrd.img
+   ```
+
+5. Install and start SSH for file transfer:
+   ```sh
+   sudo apt install openssh-server
+   sudo systemctl enable ssh
+   sudo systemctl start ssh
+   ```
+
+6. From MacOS shell, copy the files:
+   ```sh
+   scp -P 8022 maoth@localhost:{.config,initrd.img} .
+   ```
+
+7. Move the config file into linux source directory:
+   ```sh
+   mv .config /Volumes/Linux/linux/
+   ```
+
+### Build Kernel
+
+1. Go into Docker shell:
+   ```sh
+   docker exec -it kernel-dev /bin/bash
+   ```
+
+2. Navigate into the kernel source directory:
+   ```sh
+   cd linux
+   ```
+
+3. Build the config file:
+   ```sh
+   make olddefconfig
+   ```
+
+4. Run the following scripts to disbale errors regarding certificates:
+   ```sh
+   scripts/config --disable SYSTEM_TRUSTED_KEYS
+   scripts/config --disable SYSTEM_REVOCATION_KEYS
+   ```
+5. Build the kernel:
+   ```sh
+   make -j8
+   ```
+
+### Test Build
+
+Launch the installed image with newly built kernel:
 ```sh
-cd linux
+qemu-system-aarch64 \
+   -nographic \
+   -M virt,highmem=off \
+   -accel hvf \
+   -cpu host \
+   -smp 4 \
+   -m 3000 \
+   -device virtio-gpu-pci \
+   -device qemu-xhci \
+   -device usb-kbd \
+   -device usb-tablet \
+   -device intel-hda \
+   -device hda-duplex \
+   -device virtio-net-pci,netdev=net0 \
+   -netdev user,id=net0,hostfwd=tcp::8022-:22 \
+   -drive if=virtio,file=ubuntu.img,format=qcow2 \
+   -kernel linux/arch/arm64/boot/Image -initrd initrd.img \
+   -append "root=/dev/mapper/ubuntu--vg-ubuntu--lv"
 ```
-
-Configure the kernel:
-```sh
-make ARCH=x86_64 menuconfig
-```
-
-Enable required options (*I am using defaults*) and `Save`.
-
-### Building the Kernel
-
-Build the kernel:
-```sh
-make ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu- -j8
-```
-
-If you errors regarding certificates, execute the following and run `make` again.
-```sh
-scripts/config --disable SYSTEM_TRUSTED_KEYS
-scripts/config --disable SYSTEM_REVOCATION_KEYS
-```
-
-For testing changes, use QEMU for virtualization (this can be done from MacOS system / shell):
-```sh
-qemu-system-x86_64 -kernel arch/x86/boot/bzImage -hda /dev/zero -append "root=/dev/zero console=ttyS0" -serial stdio -display none
-```
-
-Kernel will panic - unable to mount root file system.
-
-### Building File System Image
-
-Use buildroot to generate a file system image. Download it into separate folder.
-```sh
-wget https://buildroot.org/downloads/buildroot-2024.02.10.tar.gz
-tar xvf buildroot-2024.02.10.tar.gz
-mv buildroot-2024.02.10 buildroot
-cd buildroot
-```
-
-Generate the config file:
-```sh
-sudo make menuconfig
-```
-
-**Note:** I have downloaded the buildroot in the home directory.
-
-Set `Target Options > Target Architecture > x86_64` also `Filesystem images > ext2/3/4 root file system > ext4` and `Save`.
-
-We can generate filesystem image:
-```sh
-make ARCH=x86_64 -j8
-```
-
-**Note:** Go take a nap during the build process for above.
-
-### QEMU Virtualization
-
-Now navigate to the Linux repo and provide the filesystem image path when launching qemu (this can be done from MacOS system / shell):
-```sh
-qemu-system-x86_64 -s -kernel arch/x86/boot/bzImage -boot c -m 2049M -hda ~/buildroot/output/images/rootfs.ext4 -append "root=/dev/sda rw console=ttyS0,115200 acpi=off nokaslr" -serial stdio -display none
-```
-
-**Note:** buildroot login username is `root` and password is empty.
 
 ## Additional
 
@@ -166,9 +236,7 @@ qemu-system-x86_64 -s -kernel arch/x86/boot/bzImage -boot c -m 2049M -hda ~/buil
 - [Kernel Newbies](https://kernelnewbies.org/FirstKernelPatch)
 - [kernel.org](https://www.kernel.org/doc/html/latest/process/howto.html)
 - [VMWare Fusion](https://blogs.vmware.com/teamfusion/2024/05/fusion-pro-now-available-free-for-personal-use.html) - for kernel testing.
-
-This will come as a surprise but I use VMWare Fusion heavily for testing purposes. I am still getting familiar with QEMU and hope to replace VMWare with it. My workflow with VMWare Fusion can probably be its own guide, so I am not including it here.
-Following the Linux Foundation guide with VMWare can probably be sufficient for MacOS development setup. However, it does not provide the flexibility of having my own developer UX and environment.
+- [Running a full arm64 system stack under QEMU](https://cdn.kernel.org/pub/linux/kernel/people/will/docs/qemu/qemu-arm64-howto.html)
 
 ---
 
