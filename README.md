@@ -181,7 +181,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 
 ### Build Kernel
 
-1. Go into Docker shell:
+1. Get into the Docker shell:
    ```sh
    docker exec -it kernel-dev /bin/bash
    ```
@@ -204,6 +204,23 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 5. Build the kernel:
    ```sh
    make -j8
+   ```
+
+6. Build the modules:
+   ```sh
+   mkdir -p ~/tmp_modules
+   make modules_install INSTALL_MOD_PATH=~/tmp_modules/ 
+   ```
+
+7. Give correct permissions:
+   ```sh
+   sudo chown -R root:root ~/tmp_modules/
+   ```
+
+8. Copy files to QEMU machine:
+   ```sh
+   cd ~/tmp_modules
+   tar cfp - * | ssh -p 8022 root@host.docker.internal '(cd / && tar xfp - -k)'
    ```
 
 ### Test Build
