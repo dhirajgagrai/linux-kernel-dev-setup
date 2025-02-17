@@ -36,7 +36,7 @@ You can check the previous iteration on GitHub history.
 2. This step is done because I want to use a shared volume between Docker and host system. This helps me in taking backups easily.
    It is not possible to build the kernel in the case-insensitive file system of MacOS.
    So, we need to create a new partition using Disk Utility if we wish to have a shared volume.
-   - Create a new partition of atleast 30GB.
+   - Create a new partition of atleast 90GB.
    - Set the formatting option of this partition to **Mac OS Extended (Case-sensitive, Journaled)**.
    - I gave the partition name as *Linux*. Make sure to change the symlink provided in the repo according to the partition name.
 
