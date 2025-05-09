@@ -33,7 +33,7 @@ You can check the previous iteration on GitHub history.
 
 1. Install [Docker](https://www.docker.com/).
 
-2. This step is done because I want to use a shared volume between Docker and host system. This helps me in taking backups easily.
+2. I want to use a shared volume between Docker and host system. The following steps help me in taking backups easily.
    It is not possible to build the kernel in the case-insensitive file system of MacOS.
    So, we need to create a new partition using Disk Utility if we wish to have a shared volume.
    - Create a new partition of atleast 90GB.
@@ -61,7 +61,7 @@ You can check the previous iteration on GitHub history.
 
    **Note:** I have `maoth` as the username. Make changes as required. We are using `kernel-dev` as the name for container.
 
-3. After exiting from above, we may have to start the container:
+3. After exiting from above, we may have to start the container (not sure):
    ```sh
    docker start kernel-dev
    ```
@@ -99,7 +99,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
    qemu-img create -f qcow2 ubuntu.img 30G
    ```
 
-3. Launch the image and install it from the QEMU graphical window:
+3. Launch the image and install it on the created disk using the QEMU graphical window:
    ```sh
    qemu-system-aarch64 \
       -monitor stdio \
@@ -126,7 +126,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 
 ### Generate config and initrd
 
-1. After installing the image, launch the raw disk image:
+1. After installation is done, launch the raw disk image:
    ```sh
    qemu-system-aarch64 \
       -nographic \
@@ -212,7 +212,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
    make modules_install INSTALL_MOD_PATH=~/tmp_modules/ 
    ```
 
-7. Give correct permissions:
+7. Give correct permissions to the files so that they can be usable on VM environment:
    ```sh
    sudo chown -R root:root ~/tmp_modules/
    ```
