@@ -10,9 +10,10 @@ This repository documents my setup for Linux kernel development, including tools
   - [Setup Docker](#setup-docker)
 - [Workflow](#workflow)
   - [Setup QEMU](#setup-qemu)
-  - [Generate config and initrd](#generate-config-and-initrd)
+  - [Get Config](#get-config)
   - [Build Kernel](#build-kernel)
   - [Test Build](#test-build)
+  - [Kernel Installation](#kernel-installation)
 - [Additional](#additional)
 
 ## Introduction
@@ -122,13 +123,12 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
       -cdrom /Volumes/Expansion/BACKUPS_Images/ubuntu-24.04.1-live-server-arm64.iso
    ```
 
-   **Note:** Provide the correct path to images above in `file` and `-cdrom` option.
+   **Note:** Provide the correct path to image above in `file` and ISO file in `-cdrom` option.
 
-### Generate config and initrd
+### Get Config
 
 1. After installation is done, launch the raw disk image:
    ```sh
-   qemu-system-aarch64 \
    qemu-system-aarch64 \
       -monitor stdio \
       -display default,show-cursor=on \
@@ -195,7 +195,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
    make olddefconfig
    ```
 
-4. Run the following scripts to disbale errors regarding certificates:
+4. Run the following scripts to disable errors regarding certificates:
    ```sh
    scripts/config --disable SYSTEM_TRUSTED_KEYS
    scripts/config --disable SYSTEM_REVOCATION_KEYS
@@ -219,7 +219,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 
 2. We need to copy files to QEMU machine. First share the directory created above:
    ```sh
-   qemu-system-aarch64 \      
+   qemu-system-aarch64 \
       -monitor stdio \
       -display default,show-cursor=on \
       -M virt \
@@ -251,7 +251,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
    ```sh
    sudo cp -r /mnt/host_share/lib/modules/<kernel-version> /lib/modules/
    sudo cp /mnt/host_share/Image /boot/vmlinuz-<kernel-version>
-   sudo cp /mnt/host_share/config-6.8.0-dirty /boot/
+   sudo cp /mnt/host_share/config-<kernel-version> /boot/
    ```
 
 5. Generate `initrd` and update GRUB:
@@ -259,7 +259,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
    sudo update-initramfs -c -k <kernel-version>
    ```
 
-6. Make changes to the GRUB. Comment out GRUB_TIMEOUT_STYLE and set timeout to some positive value GRUB_TIMEOUT = 5.
+6. Make changes to the GRUB. Comment out `GRUB_TIMEOUT_STYLE` and set timeout to some positive value `GRUB_TIMEOUT = 5`.
    ```sh
    sudo vi /etc/default/grub
    sudo update-grub
@@ -269,7 +269,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 
 Launch the installed image and selet the newly installed kernel in GRUB menu:
 ```sh
-qemu-system-aarch64 \      
+qemu-system-aarch64 \
    -monitor stdio \
    -display default,show-cursor=on \
    -M virt \
@@ -285,7 +285,7 @@ qemu-system-aarch64 \
    -device intel-hda \
    -device hda-duplex \
    -device virtio-net-pci,netdev=net0 \
-   -netdev user,id=net0,hostfwd=tcp::8022-:22`
+   -netdev user,id=net0,hostfwd=tcp::8022-:22
 ```
 
 ## Additional
