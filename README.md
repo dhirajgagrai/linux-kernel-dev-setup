@@ -205,7 +205,9 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
    make -j8
    ```
 
-6. Build the modules and copy required files:
+### Kernel Installation
+
+1. Build the modules and copy required files:
    ```sh
    mkdir -p ~/tmp_modules
    make modules_install INSTALL_MOD_PATH=~/tmp_modules/
@@ -215,7 +217,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 
    **Note:** Find the kernel version in `tmp_modules/lib/modules/<kernel-version>`.
 
-7. We need to copy files to QEMU machine. First share the directory created above:
+2. We need to copy files to QEMU machine. First share the directory created above:
    ```sh
    qemu-system-aarch64 \      
       -monitor stdio \
@@ -239,25 +241,25 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
       -device virtio-9p-pci,fsdev=host_share,mount_tag=build_share
    ```
 
-8. Mount the shared directory inside QEMU:
+3. Mount the shared directory inside QEMU:
    ```sh
    sudo mkdir -p /mnt/host_share
    sudo mount -t 9p -o trans=virtio,version=9p2000.L build_share /mnt/host_share
    ```
 
-9. Copy the files:
+4. Copy the files:
    ```sh
    sudo cp -r /mnt/host_share/lib/modules/<kernel-version> /lib/modules/
    sudo cp /mnt/host_share/Image /boot/vmlinuz-<kernel-version>
    sudo cp /mnt/host_share/config-6.8.0-dirty /boot/
    ```
 
-10. Generate `initrd` and update GRUB:
+5. Generate `initrd` and update GRUB:
    ```sh
    sudo update-initramfs -c -k <kernel-version>
    ```
 
-11. Make changes to the GRUB. Comment out GRUB_TIMEOUT_STYLE and set timeout to some positive value GRUB_TIMEOUT = 5.
+6. Make changes to the GRUB. Comment out GRUB_TIMEOUT_STYLE and set timeout to some positive value GRUB_TIMEOUT = 5.
    ```sh
    sudo vi /etc/default/grub
    sudo update-grub
