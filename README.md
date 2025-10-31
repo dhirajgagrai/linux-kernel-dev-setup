@@ -96,7 +96,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 
 2. Create a disk somewhere:
    ```sh
-   qemu-img create -f qcow2 ubuntu.img 30G
+   qemu-img create -f qcow2 ubuntu.img 50G
    ```
 
 3. Launch the image and install it on the created disk using the QEMU graphical window:
@@ -129,7 +129,9 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 1. After installation is done, launch the raw disk image:
    ```sh
    qemu-system-aarch64 \
-      -nographic \
+   qemu-system-aarch64 \
+      -monitor stdio \
+      -display default,show-cursor=on \
       -M virt \
       -accel hvf \
       -cpu host \
@@ -157,27 +159,24 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
    cp /boot/config* ~/.config
    ```
 
-4. Generate the initrd file:
-   ```sh
-   sudo mkinitramfs -o ~/initrd.img
-   ```
-
-5. Install and start SSH for file transfer:
+4. Install and start SSH for file transfer:
    ```sh
    sudo apt install openssh-server
    sudo systemctl enable ssh
    sudo systemctl start ssh
    ```
 
-6. From MacOS shell, copy the files:
+5. From MacOS shell, copy the files:
    ```sh
-   scp -P 8022 maoth@localhost:{.config,initrd.img} .
+   scp -P 8022 maoth@localhost:{.config} .
    ```
 
-7. Move the config file into linux source directory:
+6. Move the config file into linux source directory:
    ```sh
    mv .config /Volumes/Linux/linux/
    ```
+
+   **Note:** `/Volumes/Linux/` is the partition I created previously in *Prerequisites* step 2.
 
 ### Build Kernel
 
@@ -206,34 +205,77 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
    make -j8
    ```
 
-6. Build the modules:
+6. Build the modules and copy required files:
    ```sh
    mkdir -p ~/tmp_modules
-   make modules_install INSTALL_MOD_PATH=~/tmp_modules/ 
+   make modules_install INSTALL_MOD_PATH=~/tmp_modules/
+   cp arch/arm64/boot/Image ~/tmp_modules/
+   cp .config ~/tmp_modules/config-<kernel-version>
    ```
 
-7. Give correct permissions to the files so that they can be usable on VM environment:
+   **Note:** Find the kernel version in `tmp_modules/lib/modules/<kernel-version>`.
+
+7. We need to copy files to QEMU machine. First share the directory created above:
    ```sh
-   sudo chown -R root:root ~/tmp_modules/
+   qemu-system-aarch64 \      
+      -monitor stdio \
+      -display default,show-cursor=on \
+      -M virt \
+      -accel hvf \
+      -cpu host \
+      -smp 4 \
+      -m 4G \
+      -bios edk2-aarch64-code.fd \
+      -device virtio-gpu-pci \
+      -device qemu-xhci \
+      -device usb-kbd \
+      -device usb-tablet \
+      -device intel-hda \
+      -device hda-duplex \
+      -device virtio-net-pci,netdev=net0 \
+      -netdev user,id=net0,hostfwd=tcp::8022-:22 \
+      -drive if=virtio,file=ubuntu.img,format=qcow2 \
+      -fsdev local,id=host_share,path=tmp_modules,security_model=passthrough \
+      -device virtio-9p-pci,fsdev=host_share,mount_tag=build_share
    ```
 
-8. Copy files to QEMU machine:
+8. Mount the shared directory inside QEMU:
    ```sh
-   cd ~/tmp_modules
-   tar cfp - * | ssh -p 8022 root@host.docker.internal '(cd / && tar xfp - -k)'
+   sudo mkdir -p /mnt/host_share
+   sudo mount -t 9p -o trans=virtio,version=9p2000.L build_share /mnt/host_share
+   ```
+
+9. Copy the files:
+   ```sh
+   sudo cp -r /mnt/host_share/lib/modules/<kernel-version> /lib/modules/
+   sudo cp /mnt/host_share/Image /boot/vmlinuz-<kernel-version>
+   sudo cp /mnt/host_share/config-6.8.0-dirty /boot/
+   ```
+
+10. Generate `initrd` and update GRUB:
+   ```sh
+   sudo update-initramfs -c -k <kernel-version>
+   ```
+
+11. Make changes to the GRUB. Comment out GRUB_TIMEOUT_STYLE and set timeout to some positive value GRUB_TIMEOUT = 5.
+   ```sh
+   sudo vi /etc/default/grub
+   sudo update-grub
    ```
 
 ### Test Build
 
-Launch the installed image with newly built kernel:
+Launch the installed image and selet the newly installed kernel in GRUB menu:
 ```sh
-qemu-system-aarch64 \
-   -nographic \
+qemu-system-aarch64 \      
+   -monitor stdio \
+   -display default,show-cursor=on \
    -M virt \
    -accel hvf \
    -cpu host \
    -smp 4 \
    -m 4G \
+   -bios edk2-aarch64-code.fd \
    -device virtio-gpu-pci \
    -device qemu-xhci \
    -device usb-kbd \
@@ -241,10 +283,7 @@ qemu-system-aarch64 \
    -device intel-hda \
    -device hda-duplex \
    -device virtio-net-pci,netdev=net0 \
-   -netdev user,id=net0,hostfwd=tcp::8022-:22 \
-   -drive if=virtio,file=ubuntu.img,format=qcow2 \
-   -kernel linux/arch/arm64/boot/Image -initrd initrd.img \
-   -append "root=/dev/mapper/ubuntu--vg-ubuntu--lv"
+   -netdev user,id=net0,hostfwd=tcp::8022-:22`
 ```
 
 ## Additional
