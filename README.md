@@ -123,11 +123,11 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
       -cdrom /Volumes/Expansion/BACKUPS_Images/ubuntu-24.04.1-live-server-arm64.iso
    ```
 
-   **Note:** Provide the correct path to image above in `file` and ISO file in `-cdrom` option.
+   **Note:** Provide the correct path to created image above in `file` and ISO file in `-cdrom` option.
 
 ### Get Config
 
-1. After installation is done, launch the raw disk image:
+1. After installation is done, launch the raw disk image again without the `-cdrom` option:
    ```sh
    qemu-system-aarch64 \
       -monitor stdio \
@@ -180,7 +180,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 
 ### Build Kernel
 
-1. Get into the Docker shell:
+1. Get into the Docker Linux shell:
    ```sh
    docker exec -it kernel-dev /bin/bash
    ```
@@ -241,13 +241,15 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
       -device virtio-9p-pci,fsdev=host_share,mount_tag=build_share
    ```
 
-3. Mount the shared directory inside QEMU:
+   **Note:** The `path` option is set to `tmp_modules` that was created earlier.
+
+3. Inside the OS in QEMU. Mount the shared directory:
    ```sh
    sudo mkdir -p /mnt/host_share
    sudo mount -t 9p -o trans=virtio,version=9p2000.L build_share /mnt/host_share
    ```
 
-4. Copy the files:
+4. Copy the files to the required locations:
    ```sh
    sudo cp -r /mnt/host_share/lib/modules/<kernel-version> /lib/modules/
    sudo cp /mnt/host_share/Image /boot/vmlinuz-<kernel-version>
@@ -267,7 +269,7 @@ For testing changes, we use QEMU for virtualization. First download a Linux imag
 
 ### Test Build
 
-Launch the installed image and selet the newly installed kernel in GRUB menu:
+Launch the installed image and select the newly installed kernel version in GRUB menu:
 ```sh
 qemu-system-aarch64 \
    -monitor stdio \
